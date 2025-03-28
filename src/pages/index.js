@@ -31,6 +31,11 @@ export default function Home() {
           </Link>
         </div>
 
+        <Link href="/team">
+          <button>Our Team</button>
+        </Link>
+
+
         <div className="development-notice">
           <p>This website is currently under development.</p>
         </div>
