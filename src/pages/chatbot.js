@@ -35,7 +35,7 @@ export default function Chatbot() {
                         <p>Our chatbot is hosted on Streamlit. Click the button below to start interacting with our environmental data.</p>
 
                         <a href={chatbotUrl} target="_blank" rel="noopener noreferrer" className="chatbot-button">
-                            Launch Environmental Chatbot
+                            Launch LEWAS Chatbot
                         </a>
 
                         <div className="chatbot-note">
