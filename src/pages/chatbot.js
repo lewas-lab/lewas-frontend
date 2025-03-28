@@ -5,7 +5,7 @@ import Link from 'next/link';
 
 export default function Chatbot() {
     // Streamlit chatbot URL - replace with your actual URL
-    const chatbotUrl = "https://your-streamlit-chatbot-url.streamlit.app";
+    const chatbotUrl = "https://chatlewas.streamlit.app/";
 
     return (
         <Layout title="LEWAS Lab - Environmental Chatbot">
