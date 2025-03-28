@@ -18,6 +18,7 @@ const Layout = ({ children, title = 'LEWAS Lab Data' }) => {
                             <Link href="/raw-data" className="nav-link">Raw Data</Link>
                             <Link href="/sensor-readings" className="nav-link">Sensor Readings</Link>
                             <Link href="/visualizations" className="nav-link">Visualizations</Link>
+                            <Link href="/chatbot" className="nav-link">Chatbot</Link>
                         </div>
                     </nav>
                 </header>

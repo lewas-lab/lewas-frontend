@@ -25,6 +25,10 @@ export default function Home() {
           <Link href="/visualizations">
             <button>View Visualizations</button>
           </Link>
+
+          <Link href="/chatbot">
+            <button>Environmental Chatbot</button>
+          </Link>
         </div>
 
         <div className="development-notice">
