@@ -27,7 +27,7 @@ export default function Home() {
           </Link>
 
           <Link href="/chatbot">
-            <button>Environmental Chatbot</button>
+            <button>LEWAS Chatbot</button>
           </Link>
         </div>
 
