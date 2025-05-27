@@ -2,7 +2,6 @@
   "/_app": "pages/_app.js",
   "/_error": "pages/_error.js",
   "/_document": "pages/_document.js",
-  "/": "pages/index.js",
-  "/raw-data": "pages/raw-data.js",
-  "/sensor-readings": "pages/sensor-readings.js"
+  "/404": "pages/404.js",
+  "/live-data": "pages/live-data.js"
 }
