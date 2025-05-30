@@ -1,43 +1,351 @@
-npm run build
-npx serve@latest exportable
+# LEWAS Frontend - Interactive Environmental Data Dashboard
 
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/pages/api-reference/create-next-app).
+> **Learning Enhanced Watershed Assessment System (LEWAS) Lab**  
+> Virginia Tech - Environmental Data Visualization Platform
 
-## Getting Started
+## 🌊 Overview
 
-First, run the development server:
+The LEWAS Frontend is a modern, responsive web application that provides real-time visualization and analysis of environmental monitoring data from the Webb Branch watershed. Built with Next.js and D3.js, it offers researchers, students, and the public an intuitive interface to explore water quality, flow dynamics, and weather data collected 24/7 from sophisticated sensors.
+
+## ✨ Features
+
+### 📊 Interactive Data Visualization
+
+- **Real-time Charts**: Live updating graphs with D3.js
+- **Multi-parameter Display**: Overlay up to 3 different measurements
+- **Time Range Controls**: From 12 hours to 12 days of data
+- **Unit System Toggle**: Switch between SI and US Imperial units
+- **Responsive Design**: Works on desktop, tablet, and mobile
+
+### 🔬 Comprehensive Parameter Support
+
+#### Water Quality Monitoring
+
+- **pH Level**: Water acidity/alkalinity measurement
+- **Dissolved Oxygen**: Critical for aquatic ecosystem health
+- **Water Temperature**: Thermal monitoring with unit conversion
+- **Turbidity**: Water clarity in Nephelometric Turbidity Units
+- **Specific Conductance**: Electrical conductivity measurement
+- **Salinity**: Salt content in parts per thousand
+- **ORP**: Oxidation Reduction Potential in millivolts
+
+#### Water Flow Dynamics
+
+- **Stage**: Water level with datum offset correction
+- **Flow Rate**: Estimated volumetric flow using advanced algorithms
+- **Smoothed Velocity**: Processed water speed with noise reduction
+- **Downstream Velocity**: Raw velocity measurements
+
+#### Weather Monitoring
+
+- **Air Temperature**: Atmospheric temperature with unit conversion
+- **Humidity**: Relative humidity percentage
+- **Air Pressure**: Barometric pressure with altitude correction
+- **Rain Intensity**: Real-time precipitation rate
+- **Rain Accumulation**: Cumulative rainfall totals
+- **Rain Duration**: Duration of precipitation events
+
+### 🎛️ Advanced Data Processing
+
+- **Real-time Processing**: Applies the same scientific algorithms used in research
+- **Stage Correction**: Datum offset adjustments for accurate water levels
+- **Velocity Smoothing**: Adaptive alpha filtering for cleaner velocity data
+- **Flow Rate Calculation**: Cubic polynomial conversion from velocity measurements
+- **Pressure Correction**: Altitude-adjusted atmospheric pressure readings
+
+## 🚀 Quick Start
+
+### Prerequisites
+
+- Node.js 18+ installed
+- Access to LEWAS Backend API
+- Modern web browser
+
+### Installation
+
+1. **Clone the repository**
+
+```bash
+git clone https://github.com/lewaslab/lewas-frontend
+cd lewas-frontend
+cd lewas-next-project
+```
+
+2. **Install dependencies**
+
+```bash
+npm install
+```
+
+3. **Configure environment variables**
+
+```bash
+# Create .env file from the .env.example file
+NEXT_PUBLIC_API_URL=<BACKEND URL>
+NEXT_PUBLIC_API_KEY=<BACKEND API KEY>
+```
+
+4. **Run development server**
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+5. **Access the application**
+   Open [http://localhost:3000](http://localhost:3000) in your browser
 
-You can start editing the page by modifying `pages/index.js`. The page auto-updates as you edit the file.
+### Production Build
 
-[API routes](https://nextjs.org/docs/pages/building-your-application/routing/api-routes) can be accessed on [http://localhost:3000/api/hello](http://localhost:3000/api/hello). This endpoint can be edited in `pages/api/hello.js`.
+```bash
+# Build for production
+npm run build
 
-The `pages/api` directory is mapped to `/api/*`. Files in this directory are treated as [API routes](https://nextjs.org/docs/pages/building-your-application/routing/api-routes) instead of React pages.
+# Start production server
+npm run start
 
-This project uses [`next/font`](https://nextjs.org/docs/pages/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+# Or export static files
+npm run build && npm run export
+```
 
-## Learn More
+## 🏗️ Architecture
 
-To learn more about Next.js, take a look at the following resources:
+### Technology Stack
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn-pages-router) - an interactive Next.js tutorial.
+- **Framework**: Next.js 15.2.4 (React 19)
+- **Visualization**: D3.js 7.9.0 for advanced charting
+- **Data Processing**: Custom algorithms matching research standards
+- **Deployment**: Static export compatible with any hosting platform
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Component Structure
 
-## Deploy on Vercel
+```
+src/
+├── components/
+│   ├── Layout.js              # Main layout with navigation
+│   ├── RawDataDisplay.js      # Debug data visualization
+│   └── SensorTable.js         # Tabular data display
+├── pages/
+│   ├── index.js               # Landing page with overview
+│   ├── live-data.js           # Main interactive dashboard
+│   ├── team.js                # Research team information
+│   ├── chatbot.js             # AI assistant integration
+├── services/
+│   └── api.js                 # Backend API integration
+├── utils/
+│   └── dataProcessor.js       # Scientific data processing
+└── styles/
+    └── globals.css            # Global styling and themes
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## 📊 Interactive Dashboard Usage
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/pages/building-your-application/deploying) for more details.
+### Getting Started
+
+1. Navigate to the **Live Creek Data** page
+2. Select your preferred unit system (SI or US Imperial)
+3. Choose a time range for data display
+4. Configure up to 3 parameters for simultaneous viewing
+
+### Parameter Selection
+
+- **Axis 1 (Blue)**: Primary measurement, always visible
+- **Axis 2 (Red)**: Secondary measurement, toggleable
+- **Axis 3 (Green)**: Tertiary measurement, toggleable
+
+### Advanced Features
+
+- **Interactive Tooltips**: Hover over data points for detailed information
+- **Zoom and Pan**: Explore specific time periods in detail
+- **Real-time Updates**: Click "Update Chart" for latest data
+- **Multi-scale Display**: Different Y-axes for parameters with different ranges
+
+### Time Range Options
+
+- **Past 12 Hours**: High-resolution recent data
+- **Past 3 Days**: Short-term trend analysis
+- **Past 6 Days**: Weekly pattern observation
+- **Past 12 Days**: Extended trend monitoring
+
+## 🔧 Configuration
+
+### API Configuration
+
+```javascript
+// src/services/api.js
+export const ApiService = {
+  baseURL: `${process.env.NEXT_PUBLIC_API_URL}/v1/sensors`,
+  apiKey: process.env.NEXT_PUBLIC_API_KEY,
+  // ... additional configuration
+};
+```
+
+### Parameter Mapping
+
+The application maps frontend parameters to backend API calls:
+
+```javascript
+// Example parameter configuration
+export const PARAMETER_CONFIG = {
+  water_temperature: {
+    metric: "temperature",
+    medium: "water",
+    instrument: "sonde",
+    processing: "none",
+  },
+  stage: {
+    metric: "velocity-z",
+    medium: "water",
+    instrument: "argonaut",
+    processing: "stage_correction",
+  },
+  // ... more parameters
+};
+```
+
+### Data Processing Pipeline
+
+The frontend replicates research-grade processing:
+
+```javascript
+// Stage correction example
+if (param === "water/velocity-z") {
+  for (let i in response.data) {
+    response.data[i].y = response.data[i].y + 0.128; // Datum offset
+  }
+}
+
+// Velocity smoothing example
+for (let i = 1; i < response.data.length; i++) {
+  const absValue = Math.abs(response.data[i].y);
+  const alpha = Math.min(Math.max(absValue, 24.5) - 23, 30) / 30;
+  response.data[i].y =
+    (1 - alpha) * response.data[i - 1].y + alpha * response.data[i].y;
+}
+```
+
+## 🎨 Customization
+
+### Styling and Themes
+
+### Adding New Parameters
+
+1. **Update Parameter Config**: Add to `PARAMETER_CONFIG` in `api.js`
+2. **Add to Dropdown Options**: Update `parameterOptions` in `live-data.js`
+3. **Configure Processing**: Add processing logic if needed
+4. **Update Labels**: Add user-friendly labels and units
+
+### Custom Visualizations
+
+The D3.js integration allows for custom chart types:
+
+```javascript
+// Example: Adding a new chart type
+const customChart = d3
+  .select(container)
+  .append("svg")
+  .attr("width", width)
+  .attr("height", height);
+
+// Add your custom visualization logic
+```
+
+## 🔗 Integration
+
+### Backend API Integration
+
+The frontend seamlessly integrates with the LEWAS Backend API:
+
+```javascript
+// Real-time data fetching
+const fetchParameterData = async (parameterType, startTime, endTime) => {
+  const response = await ApiService.fetchParameterData(
+    config,
+    startTime,
+    endTime
+  );
+  return dataProcessor.processParameterData(
+    response.observations,
+    parameterType,
+    unitSystem
+  );
+};
+```
+
+### AI Chatbot Integration
+
+Links to the LEWAS Chatbot for natural language data queries:
+
+- Direct link to Streamlit chatbot application
+- Contextual help and example questions
+- Seamless user experience between platforms
+
+## 🧪 Development
+
+### Development Workflow
+
+### Adding New Features
+
+1. **API Integration**: Add new endpoints in `services/api.js`
+2. **Data Processing**: Extend `utils/dataProcessor.js` for new algorithms
+
+## 🌐 Deployment
+
+### Static Export (Recommended)
+
+```bash
+# Build static files
+npm run build
+
+# Serve static files
+npx serve@latest exportable
+```
+
+### Hosting Options
+
+- **GitHub Pages**: Free hosting for static sites
+- **Vercel**: Optimal for Next.js applications
+- **Netlify**: Great for static sites with forms
+- **AWS S3 + CloudFront**: Scalable cloud hosting
+- **Virginia Tech Servers**: Internal hosting option
+
+## 📚 Educational Use
+
+### Classroom Integration
+
+- **Real-time Data**: Current environmental conditions for class discussions
+- **Historical Analysis**: Trend analysis for research projects
+- **Interactive Learning**: Hands-on data exploration
+- **Cross-disciplinary**: Supports environmental, engineering, and data science courses
+
+### Research Applications
+
+- **Publication-ready Visualizations**: High-quality charts for papers
+- **Hypothesis Testing**: Visual correlation analysis
+
+## 🔒 Security
+
+### API Security
+
+- API keys stored in environment variables
+- HTTPS-only communication
+
+### Privacy
+
+- No personal data collection
+- Environmental data only
+- Transparent data usage
+- Research compliance standards
+
+## 📞 Support
+
+### Getting Help
+
+- **Technical Issues**: Submit GitHub issues
+- **Educational Use**: Contact Dr. Vinod Lohani (vlohani@vt.edu)
+- **Development**: Contact Dhruv Varshney (dhruvvarshney@vt.edu) | [LinkedIn](https://www.linkedin.com/in/dvar/)
+
+This project is part of the LEWAS Lab research initiative at Virginia Tech.
+
+Dhruv Varshney | **LEWAS Lab** | Virginia Tech | Real-time Environmental Data Since 2010
+
+_Making environmental data accessible through innovative visualization and interactive technologies._
