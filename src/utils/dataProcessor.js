@@ -1,4 +1,3 @@
-// utils/dataProcessor.js - Fixed for your backend format
 export class DataProcessor {
     constructor() {
         // Constants from original code
@@ -169,20 +168,29 @@ export class DataProcessor {
         // Apply unit conversions based on unit system
         if (unitSystem === 'US') {
             processedData = this.convertToUSUnits(processedData, parameterType);
+        } else if (unitSystem === 'SI') {
+            processedData = this.convertToSIUnits(processedData, parameterType);
         }
 
         return processedData;
     }
 
-    // Convert to US units
+    // Convert to US units - FIXED: Added exception for air_temperature
     convertToUSUnits(data, parameterType) {
+        // EXCEPTION: Air temperature is already provided by backend in Fahrenheit
+        // Skip conversion for air_temperature since backend returns it in °F already
+        if (parameterType === 'air_temperature') {
+            console.log('Keeping air_temperature in °F for US units - no conversion needed');
+            return data;
+        }
+
         const unitMappings = {
             'stage': { type: 'distance', from: 'm', to: 'ft' },
             'smoothed_velocity': { type: 'velocity', from: 'cms', to: 'fts' },
             'flow_rate': { type: 'flowRate', from: 'm3s', to: 'ft3s' },
             'downstream_velocity': { type: 'velocity', from: 'cms', to: 'fts' },
             'water_temperature': { type: 'temperature', from: 'C', to: 'F' },
-            'air_temperature': { type: 'temperature', from: 'C', to: 'F' },
+            // 'air_temperature' removed from mappings since it's handled as exception above
             'air_pressure': { type: 'pressure', from: 'hPa', to: 'inHg' },
             'rain_intensity': { type: 'precipitation', from: 'mm', to: 'in' },
             'rain_accumulation': { type: 'precipitation', from: 'mm', to: 'in' },
@@ -193,6 +201,21 @@ export class DataProcessor {
         if (!mapping) return data;
 
         return this.applyUnitConversion(data, mapping.from, mapping.to, mapping.type);
+    }
+
+    // Convert to SI units - NEW: Handle air temperature conversion from °F to °C
+    convertToSIUnits(data, parameterType) {
+        // SPECIAL CASE: Air temperature comes from backend in °F, convert to °C for SI
+        if (parameterType === 'air_temperature') {
+            console.log('Converting air_temperature from °F to °C for SI units');
+            return this.applyUnitConversion(data, 'F', 'C', 'temperature');
+        }
+
+        // For SI units, most parameters don't need conversion since backend provides them in SI
+        // Only air_temperature needs conversion since backend always provides it in °F
+
+        // All other parameters are already in SI units from backend, so return as-is
+        return data;
     }
 
     // Format data for D3 visualization - FIXED for your backend format
