@@ -3,9 +3,24 @@
 > **Learning Enhanced Watershed Assessment System (LEWAS) Lab**  
 > Virginia Tech - Environmental Data Visualization Platform
 
+## 🛠️ Technologies Used
+
+![Next.js](https://img.shields.io/badge/Next.js-000000?style=for-the-badge&logo=next.js&logoColor=white)
+![React](https://img.shields.io/badge/react-%2320232a.svg?style=for-the-badge&logo=react&logoColor=%2361DAFB)
+![D3.js](https://img.shields.io/badge/d3.js-F9A03C?style=for-the-badge&logo=d3.js&logoColor=white)
+![JavaScript](https://img.shields.io/badge/javascript-%23323330.svg?style=for-the-badge&logo=javascript&logoColor=%23F7DF1E)
+![Node.js](https://img.shields.io/badge/node.js-6DA55F?style=for-the-badge&logo=node.js&logoColor=white)
+![Tailwind CSS](https://img.shields.io/badge/tailwindcss-%2338B2AC.svg?style=for-the-badge&logo=tailwind-css&logoColor=white)
+
+## 🌐 Live Demo
+
+🔗 **Access the Dashboard**: [https://lewas.vercel.app/](https://lewas.vercel.app/)
+
 ## 🌊 Overview
 
 The LEWAS Frontend is a modern, responsive web application that provides real-time visualization and analysis of environmental monitoring data from the Webb Branch watershed. Built with Next.js and D3.js, it offers researchers, students, and the public an intuitive interface to explore water quality, flow dynamics, and weather data collected 24/7 from sophisticated sensors.
+
+> **🔗 Related Projects**: This frontend connects to the [LEWAS Backend API](https://github.com/lewas-lab/lewas-backend) for data and integrates with the [LEWAS AI Chatbot](https://github.com/lewas-lab/chatbot-frontend) for natural language queries.
 
 ## ✨ Features
 
@@ -68,7 +83,6 @@ The LEWAS Frontend is a modern, responsive web application that provides real-ti
 ```bash
 git clone https://github.com/lewaslab/lewas-frontend
 cd lewas-frontend
-cd lewas-next-project
 ```
 
 2. **Install dependencies**
@@ -280,8 +294,6 @@ Links to the LEWAS Chatbot for natural language data queries:
 - Seamless user experience between platforms
 
 ## 🧪 Development
-
-### Development Workflow
 
 ### Adding New Features
 
