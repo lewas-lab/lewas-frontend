@@ -4,7 +4,7 @@ import Link from 'next/link';
 
 export default function Home() {
   return (
-    <Layout title="Dhruv's Lab Environmental Monitoring">
+    <Layout title="LEWAS Lab Environmental Monitoring">
       <div className="home-container">
         {/* Hero Section */}
         <section className="hero-section">
