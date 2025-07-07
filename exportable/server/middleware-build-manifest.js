@@ -25,10 +25,15 @@ globalThis.__BUILD_MANIFEST = {
       "static/chunks/main.js",
       "static/chunks/pages/_error.js"
     ],
-    "/chatbot": [
+    "/live-data": [
       "static/chunks/webpack.js",
       "static/chunks/main.js",
-      "static/chunks/pages/chatbot.js"
+      "static/chunks/pages/live-data.js"
+    ],
+    "/team": [
+      "static/chunks/webpack.js",
+      "static/chunks/main.js",
+      "static/chunks/pages/team.js"
     ]
   },
   "ampFirstPages": []
