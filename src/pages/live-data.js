@@ -40,6 +40,7 @@ const LiveDataPage = () => {
             { value: 'stage', label: 'Stage' },
             { value: 'smoothed_velocity', label: 'Smoothed Velocity' },
             { value: 'flow_rate', label: 'Est. Flow Rate' },
+            { value: 'flow_rate_rating_curve', label: 'Est. Flowrate - Rating Curve' },
             { value: 'downstream_velocity', label: 'Downstream Velocity' }
         ],
         'Water Quality': [
@@ -114,8 +115,78 @@ const LiveDataPage = () => {
         }
     };
 
+    // Load rating curve flow rate data based on stage
+    const loadRatingCurveFlowRate = async () => {
+        try {
+            // Get stage data first
+            const stageConfig = PARAMETER_CONFIG['stage'];
+            if (!stageConfig) {
+                console.error('No stage config found for rating curve calculation');
+                return [];
+            }
+
+            const startTime = dateRange.start.toISOString();
+            const endTime = dateRange.end.toISOString();
+            console.log('Fetching stage data for rating curve calculation:', stageConfig);
+
+            const response = await ApiService.fetchParameterData(stageConfig, startTime, endTime);
+            console.log('Raw stage response for rating curve:', response);
+
+            if (!response.observations || response.observations.length === 0) {
+                console.warn('No stage data found for rating curve calculation');
+                return [];
+            }
+
+            console.log(`Found ${response.observations.length} stage observations for rating curve`);
+
+            // Process stage data
+            let processedStageData = dataProcessor.processParameterData(
+                response.observations,
+                'stage',
+                'SI' // Always process in SI for the formula
+            );
+
+            // Apply rating curve formula: Q (m³/s) = 1.27 × Stage (m) ^ 4.19
+            const ratingCurveData = processedStageData.map(point => {
+                const stageInMeters = point.value; // Stage is already in meters from SI processing
+                const flowRateInCubicMetersPerSecond = 1.27 * Math.pow(stageInMeters, 4.19);
+                
+                // Convert to US units if needed
+                let finalFlowRate;
+                if (unitSystem === 'US') {
+                    // Convert m³/s to ft³/s (1 m³ = 35.3147 ft³)
+                    finalFlowRate = flowRateInCubicMetersPerSecond * 35.3147;
+                } else {
+                    finalFlowRate = flowRateInCubicMetersPerSecond;
+                }
+
+                return {
+                    ...point,
+                    value: finalFlowRate
+                };
+            });
+
+            console.log(`Calculated ${ratingCurveData.length} rating curve flow rate points`);
+            console.log('Sample rating curve data:', ratingCurveData.slice(0, 2));
+
+            // Format for visualization
+            const formattedData = dataProcessor.formatForVisualization(ratingCurveData);
+            console.log(`After formatting: ${formattedData.length} rating curve points`);
+
+            return formattedData;
+        } catch (error) {
+            console.error('Error calculating rating curve flow rate:', error);
+            return [];
+        }
+    };
+
     // Load data for a specific parameter
     const loadParameterData = async (parameterType) => {
+        // Special handling for rating curve flow rate
+        if (parameterType === 'flow_rate_rating_curve') {
+            return await loadRatingCurveFlowRate();
+        }
+
         const config = PARAMETER_CONFIG[parameterType];
         if (!config) {
             console.error(`No config found for parameter: ${parameterType}`);
@@ -307,9 +378,17 @@ const LiveDataPage = () => {
             const yExtent = d3.extent(axisData, d => d.y);
             const buffer = Math.max((yExtent[1] - yExtent[0]) * 0.1, 0.01);
             
-            // For rain intensity, start from 0 to show bars from baseline
+            // For rain intensity, invert the scale (zero at top, increasing toward bottom)
             if (selectedParameters[axis] === 'rain_intensity') {
-                yScales[index].domain([0, yExtent[1] + buffer]);
+                yScales[index].domain([yExtent[1] + buffer, 0]);
+            } else if (selectedParameters[axis] === 'stage') {
+                // For stage, add natural margin at the top based on unit system
+                const naturalMargin = unitSystem === 'SI' ? 0.5 : 2; // 0.5m for SI, 2ft for US
+                yScales[index].domain([0, yExtent[1] + naturalMargin]);
+            } else if (selectedParameters[axis] === 'flow_rate_rating_curve') {
+                // For rating curve flow rate, add natural margin at the top based on unit system
+                const naturalMargin = unitSystem === 'SI' ? 0.5 : 2; // 0.5 m³/s for SI, 2 ft³/s for US
+                yScales[index].domain([0, yExtent[1] + naturalMargin]);
             } else {
                 yScales[index].domain([yExtent[0] - buffer, yExtent[1] + buffer]);
             }
@@ -385,12 +464,16 @@ const LiveDataPage = () => {
                         xEnd = (xScale(d.x) + xScale(axisData[i + 1].x)) / 2;
                     }
                     
+                    // For rain intensity with inverted scale: bars start from top (y=0) and extend down
+                    const barY = 0; // Start from top of chart
+                    const barHeight = yScales[index](d.y); // Height extends down from top
+                    
                     return {
                         data: d,
                         x: xStart,
                         width: xEnd - xStart,
-                        y: yScales[index](d.y),
-                        height: height - yScales[index](d.y)
+                        y: barY,
+                        height: barHeight
                     };
                 });
                 
@@ -542,6 +625,7 @@ const LiveDataPage = () => {
             'stage': `Stage [${unitSystem === 'US' ? 'ft' : 'm'}]`,
             'smoothed_velocity': `Smoothed Velocity [${unitSystem === 'US' ? 'ft/s' : 'm/s'}]`,
             'flow_rate': `Est. Flow Rate [${unitSystem === 'US' ? 'ft³/s' : 'm³/s'}]`,
+            'flow_rate_rating_curve': `Est. Flowrate - Rating Curve [${unitSystem === 'US' ? 'ft³/s' : 'm³/s'}]`,
             'downstream_velocity': `Downstream Velocity [${unitSystem === 'US' ? 'ft/s' : 'm/s'}]`,
             'ph': 'pH',
             'specific_conductance': 'Specific Conductance [μS/cm]',
@@ -566,6 +650,7 @@ const LiveDataPage = () => {
             'stage': unitSystem === 'US' ? 'ft' : 'm',
             'smoothed_velocity': unitSystem === 'US' ? 'ft/s' : 'm/s',
             'flow_rate': unitSystem === 'US' ? 'ft³/s' : 'm³/s',
+            'flow_rate_rating_curve': unitSystem === 'US' ? 'ft³/s' : 'm³/s',
             'downstream_velocity': unitSystem === 'US' ? 'ft/s' : 'm/s',
             'ph': '',
             'specific_conductance': 'μS/cm',
