@@ -40,6 +40,7 @@ const LiveDataPage = () => {
             { value: 'stage', label: 'Stage' },
             { value: 'smoothed_velocity', label: 'Smoothed Velocity' },
             { value: 'flow_rate', label: 'Est. Flow Rate' },
+            { value: 'flow_rate_rating_curve', label: 'Est. Flowrate - Rating Curve' },
             { value: 'downstream_velocity', label: 'Downstream Velocity' }
         ],
         'Water Quality': [
@@ -55,7 +56,7 @@ const LiveDataPage = () => {
             { value: 'air_temperature', label: 'Air temp.' },
             { value: 'humidity', label: 'Humidity' },
             { value: 'air_pressure', label: 'Air pressure' },
-            { value: 'rain_intensity', label: 'Rain Rate' },
+            { value: 'rain_intensity', label: 'Rain Intensity' },
             { value: 'rain_accumulation', label: 'Rain Accumulation' },
             { value: 'rain_duration', label: 'Rain Duration' }
         ]
@@ -114,8 +115,78 @@ const LiveDataPage = () => {
         }
     };
 
+    // Load rating curve flow rate data based on stage
+    const loadRatingCurveFlowRate = async () => {
+        try {
+            // Get stage data first
+            const stageConfig = PARAMETER_CONFIG['stage'];
+            if (!stageConfig) {
+                console.error('No stage config found for rating curve calculation');
+                return [];
+            }
+
+            const startTime = dateRange.start.toISOString();
+            const endTime = dateRange.end.toISOString();
+            console.log('Fetching stage data for rating curve calculation:', stageConfig);
+
+            const response = await ApiService.fetchParameterData(stageConfig, startTime, endTime);
+            console.log('Raw stage response for rating curve:', response);
+
+            if (!response.observations || response.observations.length === 0) {
+                console.warn('No stage data found for rating curve calculation');
+                return [];
+            }
+
+            console.log(`Found ${response.observations.length} stage observations for rating curve`);
+
+            // Process stage data
+            let processedStageData = dataProcessor.processParameterData(
+                response.observations,
+                'stage',
+                'SI' // Always process in SI for the formula
+            );
+
+            // Apply rating curve formula: Q (m³/s) = 1.27 × Stage (m) ^ 4.19
+            const ratingCurveData = processedStageData.map(point => {
+                const stageInMeters = point.value; // Stage is already in meters from SI processing
+                const flowRateInCubicMetersPerSecond = 1.27 * Math.pow(stageInMeters, 4.19);
+                
+                // Convert to US units if needed
+                let finalFlowRate;
+                if (unitSystem === 'US') {
+                    // Convert m³/s to ft³/s (1 m³ = 35.3147 ft³)
+                    finalFlowRate = flowRateInCubicMetersPerSecond * 35.3147;
+                } else {
+                    finalFlowRate = flowRateInCubicMetersPerSecond;
+                }
+
+                return {
+                    ...point,
+                    value: finalFlowRate
+                };
+            });
+
+            console.log(`Calculated ${ratingCurveData.length} rating curve flow rate points`);
+            console.log('Sample rating curve data:', ratingCurveData.slice(0, 2));
+
+            // Format for visualization
+            const formattedData = dataProcessor.formatForVisualization(ratingCurveData);
+            console.log(`After formatting: ${formattedData.length} rating curve points`);
+
+            return formattedData;
+        } catch (error) {
+            console.error('Error calculating rating curve flow rate:', error);
+            return [];
+        }
+    };
+
     // Load data for a specific parameter
     const loadParameterData = async (parameterType) => {
+        // Special handling for rating curve flow rate
+        if (parameterType === 'flow_rate_rating_curve') {
+            return await loadRatingCurveFlowRate();
+        }
+
         const config = PARAMETER_CONFIG[parameterType];
         if (!config) {
             console.error(`No config found for parameter: ${parameterType}`);
@@ -210,6 +281,7 @@ const LiveDataPage = () => {
         // Clear existing content except title
         g.selectAll(".axis").remove();
         g.selectAll(".dots").remove();
+        g.selectAll(".bars").remove();
         g.selectAll(".axis-label").remove();
         g.selectAll(".line-path").remove();
 
@@ -305,7 +377,21 @@ const LiveDataPage = () => {
             // Set y domain with buffer
             const yExtent = d3.extent(axisData, d => d.y);
             const buffer = Math.max((yExtent[1] - yExtent[0]) * 0.1, 0.01);
-            yScales[index].domain([yExtent[0] - buffer, yExtent[1] + buffer]);
+            
+            // For rain intensity, invert the scale (zero at top, increasing toward bottom)
+            if (selectedParameters[axis] === 'rain_intensity') {
+                yScales[index].domain([yExtent[1] + buffer, 0]);
+            } else if (selectedParameters[axis] === 'stage') {
+                // For stage, add natural margin at the top based on unit system
+                const naturalMargin = unitSystem === 'SI' ? 0.5 : 2; // 0.5m for SI, 2ft for US
+                yScales[index].domain([0, yExtent[1] + naturalMargin]);
+            } else if (selectedParameters[axis] === 'flow_rate_rating_curve') {
+                // For rating curve flow rate, add natural margin at the top based on unit system
+                const naturalMargin = unitSystem === 'SI' ? 0.5 : 2; // 0.5 m³/s for SI, 2 ft³/s for US
+                yScales[index].domain([0, yExtent[1] + naturalMargin]);
+            } else {
+                yScales[index].domain([yExtent[0] - buffer, yExtent[1] + buffer]);
+            }
 
             // Create y axis
             const yAxis = d3.axisLeft(yScales[index])
@@ -353,83 +439,183 @@ const LiveDataPage = () => {
                 .style("font-weight", "bold")
                 .text(getParameterLabel(selectedParameters[axis], unitSystem));
 
-            // Create line generator
-            const line = d3.line()
-                .x(d => xScale(d.x))
-                .y(d => yScales[index](d.y))
-                .curve(d3.curveMonotoneX);
-
-            // Add line path
-            g.append("path")
-                .datum(axisData)
-                .attr("class", `line-path line-${index}`)
-                .attr("fill", "none")
-                .attr("stroke", colors[index])
-                .attr("stroke-width", 2)
-                .attr("opacity", 0.8)
-                .attr("d", line);
-
-            // Add data points
-            g.selectAll(`.dots-${index}`)
-                .data(axisData)
-                .join("circle")
-                .attr("class", `dots dots-${index}`)
-                .attr("cx", d => xScale(d.x))
-                .attr("cy", d => yScales[index](d.y))
-                .attr("r", 3)
-                .style("fill", colors[index])
-                .style("stroke", "white")
-                .style("stroke-width", 1)
-                .style("cursor", "pointer")
-                .on("mouseover", function (event, d) {
-                    // Get container bounds for better positioning
-                    const containerBounds = containerRef.current.getBoundingClientRect();
-                    const chartBounds = svgRef.current.getBoundingClientRect();
-
-                    // Calculate position relative to the chart container
-                    const x = event.clientX - containerBounds.left;
-                    const y = event.clientY - containerBounds.top;
-
-                    // Adjust tooltip position to stay within bounds
-                    const tooltipX = Math.min(x + 15, containerBounds.width - 150);
-                    const tooltipY = Math.max(y - 70, 10);
-
-                    tooltip.transition()
-                        .duration(200)
-                        .style("opacity", 0.95);
-
-                    tooltip.html(`
-                        <div style="font-weight: bold; margin-bottom: 5px;">
-                            ${getParameterLabel(selectedParameters[axis], unitSystem)}
-                        </div>
-                        <div style="margin-bottom: 3px;">
-                            ${d3.timeFormat("%a %I:%M %p")(d.x)}
-                        </div>
-                        <div style="font-size: 14px; font-weight: bold;">
-                            ${d.y.toFixed(2)} ${getUnitAbbr(selectedParameters[axis], unitSystem)}
-                        </div>
-                    `)
-                        .style("background", colors[index])
-                        .style("left", tooltipX + "px")
-                        .style("top", tooltipY + "px");
-
-                    d3.select(this)
-                        .transition()
-                        .duration(100)
-                        .attr("r", 6)
-                        .style("stroke-width", 2);
-                })
-                .on("mouseout", function (event, d) {
-                    tooltip.transition()
-                        .duration(500)
-                        .style("opacity", 0);
-
-                    d3.select(this)
-                        .transition()
-                        .duration(200)
-                        .attr("r", 3)
-                        .style("stroke-width", 1);
+            // Check if this is rain intensity - render as bars instead of line
+            const isRainIntensity = selectedParameters[axis] === 'rain_intensity';
+            
+            if (isRainIntensity) {
+                // Render rain intensity as bars spanning between mid-points
+                // Calculate bar positions and widths based on adjacent data points
+                const bars = axisData.map((d, i) => {
+                    let xStart, xEnd;
+                    
+                    if (i === 0) {
+                        // First bar: from start of chart to midpoint with next point
+                        xStart = 0;
+                        xEnd = axisData.length > 1 ? 
+                            (xScale(d.x) + xScale(axisData[i + 1].x)) / 2 : 
+                            xScale(d.x) + (width / axisData.length) / 2;
+                    } else if (i === axisData.length - 1) {
+                        // Last bar: from midpoint with previous point to end of chart
+                        xStart = (xScale(axisData[i - 1].x) + xScale(d.x)) / 2;
+                        xEnd = width;
+                    } else {
+                        // Middle bars: from midpoint with previous to midpoint with next
+                        xStart = (xScale(axisData[i - 1].x) + xScale(d.x)) / 2;
+                        xEnd = (xScale(d.x) + xScale(axisData[i + 1].x)) / 2;
+                    }
+                    
+                    // For rain intensity with inverted scale: bars start from top (y=0) and extend down
+                    const barY = 0; // Start from top of chart
+                    const barHeight = yScales[index](d.y); // Height extends down from top
+                    
+                    return {
+                        data: d,
+                        x: xStart,
+                        width: xEnd - xStart,
+                        y: barY,
+                        height: barHeight
+                    };
                 });
+                
+                g.selectAll(`.bars-${index}`)
+                    .data(bars)
+                    .join("rect")
+                    .attr("class", `bars bars-${index}`)
+                    .attr("x", d => d.x)
+                    .attr("y", d => d.y)
+                    .attr("width", d => Math.max(1, d.width)) // Ensure minimum width of 1px
+                    .attr("height", d => d.height)
+                    .style("fill", colors[index])
+                    .style("opacity", 0.7)
+                    .style("cursor", "pointer")
+                    .on("mouseover", function (event, d) {
+                        // Get container bounds for better positioning
+                        const containerBounds = containerRef.current.getBoundingClientRect();
+                        const chartBounds = svgRef.current.getBoundingClientRect();
+
+                        // Calculate position relative to the chart container
+                        const x = event.clientX - containerBounds.left;
+                        const y = event.clientY - containerBounds.top;
+
+                        // Adjust tooltip position to stay within bounds
+                        const tooltipX = Math.min(x + 15, containerBounds.width - 150);
+                        const tooltipY = Math.max(y - 70, 10);
+
+                        tooltip.transition()
+                            .duration(200)
+                            .style("opacity", 0.95);
+
+                        tooltip.html(`
+                            <div style="font-weight: bold; margin-bottom: 5px;">
+                                ${getParameterLabel(selectedParameters[axis], unitSystem)}
+                            </div>
+                            <div style="margin-bottom: 3px;">
+                                ${d3.timeFormat("%a %I:%M %p")(d.data.x)}
+                            </div>
+                            <div style="font-size: 14px; font-weight: bold;">
+                                ${d.data.y.toFixed(2)} ${getUnitAbbr(selectedParameters[axis], unitSystem)}
+                            </div>
+                        `)
+                            .style("background", colors[index])
+                            .style("left", tooltipX + "px")
+                            .style("top", tooltipY + "px");
+
+                        d3.select(this)
+                            .transition()
+                            .duration(100)
+                            .style("opacity", 1);
+                    })
+                    .on("mouseout", function (event, d) {
+                        tooltip.transition()
+                            .duration(500)
+                            .style("opacity", 0);
+
+                        d3.select(this)
+                            .transition()
+                            .duration(200)
+                            .style("opacity", 0.7);
+                    });
+            } else {
+                // Create line generator for non-rain intensity parameters
+                const line = d3.line()
+                    .x(d => xScale(d.x))
+                    .y(d => yScales[index](d.y))
+                    .curve(d3.curveMonotoneX);
+
+                // Add line path
+                g.append("path")
+                    .datum(axisData)
+                    .attr("class", `line-path line-${index}`)
+                    .attr("fill", "none")
+                    .attr("stroke", colors[index])
+                    .attr("stroke-width", 2)
+                    .attr("opacity", 0.8)
+                    .attr("d", line);
+            }
+
+            // Add data points (only for non-rain intensity parameters)
+            if (!isRainIntensity) {
+                g.selectAll(`.dots-${index}`)
+                    .data(axisData)
+                    .join("circle")
+                    .attr("class", `dots dots-${index}`)
+                    .attr("cx", d => xScale(d.x))
+                    .attr("cy", d => yScales[index](d.y))
+                    .attr("r", 3)
+                    .style("fill", colors[index])
+                    .style("stroke", "white")
+                    .style("stroke-width", 1)
+                    .style("cursor", "pointer")
+                    .on("mouseover", function (event, d) {
+                        // Get container bounds for better positioning
+                        const containerBounds = containerRef.current.getBoundingClientRect();
+                        const chartBounds = svgRef.current.getBoundingClientRect();
+
+                        // Calculate position relative to the chart container
+                        const x = event.clientX - containerBounds.left;
+                        const y = event.clientY - containerBounds.top;
+
+                        // Adjust tooltip position to stay within bounds
+                        const tooltipX = Math.min(x + 15, containerBounds.width - 150);
+                        const tooltipY = Math.max(y - 70, 10);
+
+                        tooltip.transition()
+                            .duration(200)
+                            .style("opacity", 0.95);
+
+                        tooltip.html(`
+                            <div style="font-weight: bold; margin-bottom: 5px;">
+                                ${getParameterLabel(selectedParameters[axis], unitSystem)}
+                            </div>
+                            <div style="margin-bottom: 3px;">
+                                ${d3.timeFormat("%a %I:%M %p")(d.x)}
+                            </div>
+                            <div style="font-size: 14px; font-weight: bold;">
+                                ${d.y.toFixed(2)} ${getUnitAbbr(selectedParameters[axis], unitSystem)}
+                            </div>
+                        `)
+                            .style("background", colors[index])
+                            .style("left", tooltipX + "px")
+                            .style("top", tooltipY + "px");
+
+                        d3.select(this)
+                            .transition()
+                            .duration(100)
+                            .attr("r", 6)
+                            .style("stroke-width", 2);
+                    })
+                    .on("mouseout", function (event, d) {
+                        tooltip.transition()
+                            .duration(500)
+                            .style("opacity", 0);
+
+                        d3.select(this)
+                            .transition()
+                            .duration(200)
+                            .attr("r", 3)
+                            .style("stroke-width", 1);
+                    });
+            }
         });
     };
 
@@ -439,6 +625,7 @@ const LiveDataPage = () => {
             'stage': `Stage [${unitSystem === 'US' ? 'ft' : 'm'}]`,
             'smoothed_velocity': `Smoothed Velocity [${unitSystem === 'US' ? 'ft/s' : 'm/s'}]`,
             'flow_rate': `Est. Flow Rate [${unitSystem === 'US' ? 'ft³/s' : 'm³/s'}]`,
+            'flow_rate_rating_curve': `Est. Flowrate - Rating Curve [${unitSystem === 'US' ? 'ft³/s' : 'm³/s'}]`,
             'downstream_velocity': `Downstream Velocity [${unitSystem === 'US' ? 'ft/s' : 'm/s'}]`,
             'ph': 'pH',
             'specific_conductance': 'Specific Conductance [μS/cm]',
@@ -463,6 +650,7 @@ const LiveDataPage = () => {
             'stage': unitSystem === 'US' ? 'ft' : 'm',
             'smoothed_velocity': unitSystem === 'US' ? 'ft/s' : 'm/s',
             'flow_rate': unitSystem === 'US' ? 'ft³/s' : 'm³/s',
+            'flow_rate_rating_curve': unitSystem === 'US' ? 'ft³/s' : 'm³/s',
             'downstream_velocity': unitSystem === 'US' ? 'ft/s' : 'm/s',
             'ph': '',
             'specific_conductance': 'μS/cm',
@@ -554,7 +742,7 @@ const LiveDataPage = () => {
                                 value={timeRange}
                                 onChange={(e) => handleTimeRangeChange(e.target.value)}
                             >
-                                <option value="1day">Past 12 hours</option>
+                                <option value="1day">Past 24 hours</option>
                                 <option value="3days">Past 3 days</option>
                                 <option value="6days">Past 6 days</option>
                                 <option value="12days">Past 12 days</option>
@@ -795,6 +983,15 @@ const LiveDataPage = () => {
                 @keyframes spin {
                     0% { transform: rotate(0deg); }
                     100% { transform: rotate(360deg); }
+                }
+
+                /* Bar chart styling for rain intensity */
+                .bars {
+                    transition: opacity 0.2s ease;
+                }
+
+                .bars:hover {
+                    opacity: 1 !important;
                 }
 
                 @media (max-width: 768px) {

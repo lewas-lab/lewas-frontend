@@ -45,3 +45,17 @@ exportable/cache/
 exportable/trace
 **/cache/webpack/
 
+# --- NEW: Ignore auto-generated build artifacts and static files (added for local dev convenience) ---
+exportable/build-manifest.json
+exportable/react-loadable-manifest.json
+exportable/middleware-build-manifest.js
+exportable/middleware-manifest.json
+exportable/middleware-react-loadable-manifest.js
+exportable/next-font-manifest.js
+exportable/next-font-manifest.json
+exportable/server/
+exportable/static/
+exportable/pages-manifest.json
+exportable/vendor-chunks/
+# --- End of new auto-generated ignores ---
+
